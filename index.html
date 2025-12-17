@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ashoka Focus™ | Auditory Environment Tool</title>
+    <style>
+        :root {
+            --bg-color: #050b14; 
+            --neon-green: #00ff9d; 
+            --cyan: #00d2ff; 
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0; height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            overflow: hidden;
+        }
+        .fog {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #0f1c2e 0%, var(--bg-color) 70%);
+            z-index: -1;
+        }
+        header {
+            width: 100%; padding: 20px; text-align: center;
+            display: flex; justify-content: space-between; align-items: center;
+            box-sizing: border-box;
+        }
+        .brand { font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; }
+        .brand span { color: var(--neon-green); }
+        .publisher { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; display: block; }
+        .visualizer-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
+        .breathing-circle {
+            width: 140px; height: 140px; border-radius: 50%;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .breathing-circle::after {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px solid var(--neon-green);
+            opacity: 0; transform: scale(0.8); transition: all 0.3s ease;
+        }
+        .active-pulse::after { animation: pulse 4s infinite ease-in-out; opacity: 1; }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        .timer-display { font-size: 2.2rem; font-weight: 200; color: var(--text-main); }
+        .controls {
+            width: 100%; max-width: 500px;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px);
+            border-top-left-radius: 25px; border-top-right-radius: 25px;
+            padding: 25px 20px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .mode-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-muted); padding: 12px; border-radius: 10px;
+            font-size: 0.85rem; cursor: pointer; text-align: left;
+        }
+        .mode-btn.active { background: rgba(0, 255, 157, 0.1); border-color: var(--neon-green); color: var(--neon-green); }
+        .play-btn {
+            width: 100%; padding: 16px; background: var(--neon-green);
+            color: #000; font-weight: 700; border: none; border-radius: 50px;
+            cursor: pointer; margin-top: 5px; transition: 0.3s;
+        }
+        .overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.95); z-index: 1000;
+            display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal {
+            background: #0f172a; padding: 25px; border-radius: 15px;
+            border: 1px solid #334155; max-width: 350px; text-align: center;
+        }
+        .modal h3 { color: var(--text-main); margin-top: 0; }
+        .modal p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; text-align: left; }
+        .agree-btn {
+            background: var(--text-main); color: #000; padding: 10px 25px;
+            border: none; border-radius: 6px; font-weight: bold; margin-top: 15px; cursor: pointer;
+        }
+        .hidden { display: none; }
+        .tiny-text { font-size: 0.65rem; color: #475569; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="fog"></div>
+    <div id="safetyPopup" class="overlay">
+        <div class="modal">
+            <h3>Usage Guidelines</h3>
+            <p><strong>Ashoka Focus™</strong> is an environmental audio tool designed to reduce background noise distractions.</p>
+            <p>
+                • This tool <strong>does not treat</strong> any medical condition.<br>
+                • It is a <strong>Helper</strong> for maintaining attention flow.<br>
+                • Do not use while driving or operating heavy machinery.
+            </p>
+            <button class="agree-btn" onclick="enterApp()">I Understand</button>
+            <div class="tiny-text">By Ashoka Music Lab • Scientific Advisor: Dr. P.R.K. Reddy</div>
+        </div>
+    </div>
+    <header>
+        <div>
+            <div class="brand">ASHOKA<span>FOCUS™</span></div>
+            <span class="publisher">by Ashoka Music Lab</span>
+        </div>
+        <div style="font-size:0.7rem; color:var(--neon-green); border:1px solid var(--neon-green); padding:2px 8px; border-radius:12px;">
+            <span id="priceTag">FREE VERSION</span>
+        </div>
+    </header>
+    <div class="visualizer-container">
+        <div class="breathing-circle" id="circle">
+            <div class="timer-display" id="timer">00:00</div>
+        </div>
+    </div>
+    <div class="controls">
+        <div class="mode-grid">
+            <button class="mode-btn active" onclick="setMode('focus')">🧠 Deep Focus (40Hz)</button>
+            <button class="mode-btn" onclick="setMode('bell')">🔔 Harmonic Bell</button>
+            <button class="mode-btn" onclick="setMode('logic')">💻 Logic Tunnel</button>
+            <button class="mode-btn" onclick="setMode('water')">🌊 Flow State</button>
+        </div>
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">START SESSION</button>
+        <div class="tiny-text">
+            © 2025 Ashoka Music Lab. All Rights Reserved.<br>
+            For Enterprise Licensing: ashokafocus@gmail.com
+        </div>
+    </div>
+    <script>
+        let audioCtx, isPlaying = false, currentMode = 'focus', oscillators = [], gainNode;
+        function enterApp() { document.getElementById('safetyPopup').classList.add('hidden'); }
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function createNoise() {
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            let lastOut = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                data[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = data[i];
+                data[i] *= 3.5; 
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer; noise.loop = true;
+            return noise;
+        }
+        function playTone(freq) {
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = freq;
+            const oscGain = audioCtx.createGain();
+            oscGain.gain.value = 0.05; 
+            osc.connect(oscGain); oscGain.connect(gainNode);
+            osc.start();
+            oscillators.push({osc, gain: oscGain});
+        }
+        function startEngine() {
+            gainNode = audioCtx.createGain();
+            gainNode.connect(audioCtx.destination);
+            if(currentMode === 'focus') {
+                const n = createNoise(); const ng = audioCtx.createGain(); ng.gain.value = 0.1;
+                n.connect(ng); ng.connect(gainNode); n.start();
+                oscillators.push({osc: n, gain: ng});
+                playTone(200); playTone(40);
+            } else if(currentMode === 'bell') {
+                playTone(174); playTone(522);
+            } else {
+                const n = createNoise(); const ng = audioCtx.createGain(); ng.gain.value = 0.25;
+                n.connect(ng); ng.connect(gainNode); n.start();
+                oscillators.push({osc: n, gain: ng});
+            }
+        }
+        function setMode(mode) {
+            if(isPlaying) togglePlay();
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            const color = (mode === 'water' || mode === 'bell') ? '#00d2ff' : '#00ff9d';
+            document.documentElement.style.setProperty('--neon-green', color);
+        }
+        function togglePlay() {
+            initAudio();
+            const btn = document.getElementById('playBtn');
+            const circle = document.getElementById('circle');
+            if (!isPlaying) {
+                startEngine();
+                circle.classList.add('active-pulse');
+                btn.innerText = "STOP SESSION";
+                btn.style.background = "#ff4b4b"; btn.style.color = "#fff";
+                isPlaying = true; startTimer();
+            } else {
+                oscillators.forEach(o => { try{o.osc.stop();}catch(e){} });
+                oscillators = [];
+                circle.classList.remove('active-pulse');
+                btn.innerText = "START SESSION";
+                btn.style.background = "var(--neon-green)"; btn.style.color = "#000";
+                isPlaying = false; stopTimer();
+            }
+        }
+        let s = 0, tInt;
+        function startTimer() { tInt = setInterval(() => { s++; 
+            document.getElementById('timer').innerText = 
+            `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; 
+        }, 1000); }
+        function stopTimer() { clearInterval(tInt); s = 0; document.getElementById('timer').innerText = "00:00"; }
+    </script>
+</body>
+</html>
